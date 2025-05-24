@@ -1,0 +1,43 @@
+name: Build r8152.ko for ASUS ROG Phone 5
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cài đặt các gói cần thiết
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libncurses-dev bison flex libssl-dev libelf-dev
+
+      - name: Tải mã nguồn kernel ASUS
+        run: |
+          git clone https://github.com/Skywalker-I005/ASUS_I005_1-kernel.git kernel
+
+      - name: Giải nén config.gz
+        run: |
+          zcat config.gz > kernel/.config
+
+      - name: Thiết lập môi trường
+        run: |
+          export ARCH=arm64
+          export CROSS_COMPILE=aarch64-linux-android-
+          export KERNEL_SRC=$GITHUB_WORKSPACE/kernel
+          export NDK_VERSION=r25c
+          wget https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip
+          unzip android-ndk-${NDK_VERSION}-linux.zip
+          export PATH=$GITHUB_WORKSPACE/android-ndk-${NDK_VERSION}/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
+
+      - name: Biên dịch module r8152
+        run: |
+          make -C $KERNEL_SRC M=$GITHUB_WORKSPACE/r8152 modules
+
+      - name: Lưu artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: r8152-ko
+          path: r8152/r8152.ko
