@@ -1,43 +1,46 @@
 name: Build r8152.ko for ASUS ROG Phone 5
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
-  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Cài đặt các gói cần thiết
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libncurses-dev bison flex libssl-dev libelf-dev
+          sudo apt-get install -y build-essential libncurses-dev bison flex libssl-dev libelf-dev bc unzip
 
-      - name: Tải mã nguồn kernel ASUS
+      - name: Clone ASUS kernel source
         run: |
-          git clone https://github.com/Skywalker-I005/ASUS_I005_1-kernel.git kernel
+          git clone --depth=1 https://github.com/Skywalker-I005/ASUS_I005_1-kernel.git kernel
 
-      - name: Giải nén config.gz
+      - name: Extract config.gz
         run: |
+          mkdir -p kernel
           zcat config.gz > kernel/.config
 
-      - name: Thiết lập môi trường
+      - name: Setup Android NDK
+        run: |
+          wget https://dl.google.com/android/repository/android-ndk-r25c-linux.zip
+          unzip android-ndk-r25c-linux.zip
+          echo "$GITHUB_WORKSPACE/android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
+
+      - name: Build r8152.ko
         run: |
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-android-
           export KERNEL_SRC=$GITHUB_WORKSPACE/kernel
-          export NDK_VERSION=r25c
-          wget https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip
-          unzip android-ndk-${NDK_VERSION}-linux.zip
-          export PATH=$GITHUB_WORKSPACE/android-ndk-${NDK_VERSION}/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
-
-      - name: Biên dịch module r8152
-        run: |
           make -C $KERNEL_SRC M=$GITHUB_WORKSPACE/r8152 modules
 
-      - name: Lưu artifact
-  uses: actions/upload-artifact@v4
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
           name: r8152-ko
           path: r8152/r8152.ko
