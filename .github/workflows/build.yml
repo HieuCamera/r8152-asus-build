@@ -37,7 +37,7 @@ jobs:
           make -C $KERNEL_SRC M=$GITHUB_WORKSPACE/r8152 modules
 
       - name: Lưu artifact
-        uses: actions/upload-artifact@v2
+  uses: actions/upload-artifact@v4
         with:
           name: r8152-ko
           path: r8152/r8152.ko
