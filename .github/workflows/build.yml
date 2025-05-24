@@ -32,12 +32,21 @@ jobs:
           unzip android-ndk-r25c-linux.zip
           echo "$GITHUB_WORKSPACE/android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
 
-      - name: Build r8152.ko
-        run: |
-          export ARCH=arm64
-          export CROSS_COMPILE=aarch64-linux-android-
-          export KERNEL_SRC=$GITHUB_WORKSPACE/kernel
-          make -C $KERNEL_SRC M=$GITHUB_WORKSPACE/r8152 modules
+      - name: Prepare kernel source
+  run: |
+    export ARCH=arm64
+    export CROSS_COMPILE=aarch64-linux-android-
+    cd kernel
+    make oldconfig
+    make prepare
+
+- name: Build r8152.ko
+  run: |
+    export ARCH=arm64
+    export CROSS_COMPILE=aarch64-linux-android-
+    export KERNEL_SRC=$GITHUB_WORKSPACE/kernel
+    make -C $KERNEL_SRC M=$GITHUB_WORKSPACE/r8152 modules
+
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
