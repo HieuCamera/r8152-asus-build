@@ -28,6 +28,13 @@ jobs:
         run: |
           zcat config.gz > kernel/.config
 
+      - name: Patch .config to disable KGDB and debug options
+        run: |
+          sed -i 's/^CONFIG_KGDB=y/# CONFIG_KGDB is not set/' kernel/.config
+          sed -i 's/^CONFIG_KGDB=/CONFIG_KGDB=n/' kernel/.config || true
+          sed -i 's/^CONFIG_DEBUG_KERNEL=y/# CONFIG_DEBUG_KERNEL is not set/' kernel/.config
+          sed -i 's/^CONFIG_DEBUG_INFO=y/# CONFIG_DEBUG_INFO is not set/' kernel/.config
+
       - name: Download and setup Android NDK
         run: |
           wget https://dl.google.com/android/repository/android-ndk-r25c-linux.zip
@@ -40,22 +47,21 @@ jobs:
           export CC=clang
           export CLANG_TRIPLE=aarch64-linux-gnu-
           export LLVM=1
+          export LLVM_IAS=1
           export PATH=$GITHUB_WORKSPACE/android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
           make -C kernel olddefconfig
           make -C kernel prepare
-
-
-
 
       - name: Build r8152.ko
         run: |
           export ARCH=arm64
           export CC=clang
-          export CROSS_COMPILE=aarch64-linux-android-
           export CLANG_TRIPLE=aarch64-linux-gnu-
+          export CROSS_COMPILE=aarch64-linux-android-
+          export LLVM=1
+          export LLVM_IAS=1
           export PATH=$GITHUB_WORKSPACE/android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
           make -C kernel M=$GITHUB_WORKSPACE/r8152 modules
-
 
       - name: Upload r8152.ko
         uses: actions/upload-artifact@v4
