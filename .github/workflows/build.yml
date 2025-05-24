@@ -34,14 +34,16 @@ jobs:
           unzip -q android-ndk-r25c-linux.zip
           echo "$GITHUB_WORKSPACE/android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
 
-      - name: Prepare kernel source with Clang
+      - name: Prepare kernel source with LLVM/Clang
         run: |
           export ARCH=arm64
           export CC=clang
           export CLANG_TRIPLE=aarch64-linux-gnu-
+          export LLVM=1
           export PATH=$GITHUB_WORKSPACE/android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
           make -C kernel olddefconfig
           make -C kernel prepare
+
 
 
 
