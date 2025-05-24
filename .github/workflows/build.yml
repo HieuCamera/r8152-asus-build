@@ -8,47 +8,46 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout source
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libncurses-dev bison flex libssl-dev libelf-dev bc unzip
+          sudo apt-get install -y \
+            build-essential bc bison flex libssl-dev \
+            libncurses-dev libelf-dev cpio unzip git wget
 
       - name: Clone ASUS kernel source
         run: |
           git clone --depth=1 https://github.com/Skywalker-I005/ASUS_I005_1-kernel.git kernel
 
-      - name: Extract config.gz
+      - name: Extract kernel config
         run: |
-          mkdir -p kernel
           zcat config.gz > kernel/.config
 
-      - name: Setup Android NDK
+      - name: Download and setup Android NDK
         run: |
           wget https://dl.google.com/android/repository/android-ndk-r25c-linux.zip
-          unzip android-ndk-r25c-linux.zip
+          unzip -q android-ndk-r25c-linux.zip
           echo "$GITHUB_WORKSPACE/android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
 
       - name: Prepare kernel source
-  run: |
-    export ARCH=arm64
-    export CROSS_COMPILE=aarch64-linux-android-
-    cd kernel
-    make oldconfig
-    make prepare
+        run: |
+          export ARCH=arm64
+          export CROSS_COMPILE=aarch64-linux-android-
+          make -C kernel oldconfig
+          make -C kernel prepare
 
-- name: Build r8152.ko
-  run: |
-    export ARCH=arm64
-    export CROSS_COMPILE=aarch64-linux-android-
-    export KERNEL_SRC=$GITHUB_WORKSPACE/kernel
-    make -C $KERNEL_SRC M=$GITHUB_WORKSPACE/r8152 modules
+      - name: Build r8152.ko
+        run: |
+          export ARCH=arm64
+          export CROSS_COMPILE=aarch64-linux-android-
+          make -C kernel M=$GITHUB_WORKSPACE/r8152 modules
 
-
-      - name: Upload artifact
+      - name: Upload r8152.ko
         uses: actions/upload-artifact@v4
         with:
           name: r8152-ko
